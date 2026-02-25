@@ -22,29 +22,29 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
-       if (input.Player.Interact.WasPressedThisFrame())
-    {
-        Debug.Log("STEP 3: Нажата E");
-        TryInteract();
-    }
-    }
-    void TryInteract()
-{
-    Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, 1.2f);
-
-    foreach (var hit in hits)
-    {
-        IInteractable interactable = hit.GetComponent<IInteractable>();
-        if (interactable != null && interactable.CanInteract())
+        if (input.Player.Interact.WasPressedThisFrame())
         {
-            Debug.Log("Player: взаимодействую с объектом");
-            interactable.Interact();
-            return;
+            Debug.Log("STEP 3: Нажата E");
+            TryInteract();
         }
     }
+    void TryInteract()
+    {
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, 1.2f);
 
-    Debug.Log("Player: рядом нет объектов для взаимодействия");
-}
+        foreach (var hit in hits)
+        {
+            IInteractable interactable = hit.GetComponent<IInteractable>();
+            if (interactable != null && interactable.CanInteract())
+            {
+                Debug.Log("Player: взаимодействую с объектом");
+                interactable.Interact();
+                return;
+            }
+        }
+
+        Debug.Log("Player: рядом нет объектов для взаимодействия");
+    }
 
     private void OnDestroy()
     {

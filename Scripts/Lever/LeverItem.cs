@@ -13,7 +13,7 @@ public class LeverItem : MonoBehaviour, IInteractable
     public void Interact()
     {
         InventoryManager.Instance.AddItem(itemData);
-    Destroy(gameObject);
+        Destroy(gameObject);
     }
 
     private void OnTriggerEnter2D(Collider2D other)

@@ -6,6 +6,8 @@ public class InventoryManager : MonoBehaviour
     public static InventoryManager Instance { get; private set; }
 
     private List<ItemData> items = new();
+    public List<ItemData> Items => items;
+
     public ItemData SelectedItem { get; private set; }
 
     private void Awake()
@@ -17,7 +19,7 @@ public class InventoryManager : MonoBehaviour
     public void AddItem(ItemData item)
     {
         items.Add(item);
-        InventoryUI.Instance.AddItem(item);
+        InventoryUI.Instance.RefreshUI(items);
     }
 
     public bool HasItem(ItemType type)
@@ -25,19 +27,18 @@ public class InventoryManager : MonoBehaviour
         return items.Exists(i => i.itemType == type);
     }
 
-  public void SelectItem(ItemData item)
-{
-    Debug.Log("SelectItem вызван: " + item.itemType);
-    SelectedItem = item;
-
-    if (InventoryUI.Instance == null)
+    public void SelectItem(ItemData item)
     {
-        Debug.LogError("InventoryUI.Instance = NULL");
-        return;
-    }
+        if (SelectedItem == item)
+        {
+            SelectedItem = null;
+            InventoryUI.Instance.ClearSelection();
+            return;
+        }
 
-    InventoryUI.Instance.Highlight(item);
-}
+        SelectedItem = item;
+        InventoryUI.Instance.Highlight(item);
+    }
 
     public void ConsumeSelectedItem()
     {
@@ -46,8 +47,9 @@ public class InventoryManager : MonoBehaviour
         if (SelectedItem.consumable)
         {
             items.Remove(SelectedItem);
-            InventoryUI.Instance.RemoveItem(SelectedItem);
             SelectedItem = null;
+
+            InventoryUI.Instance.RefreshUI(items);
         }
     }
 }
