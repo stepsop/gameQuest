@@ -36,7 +36,7 @@ public class InventoryUI : MonoBehaviour
     /// Главный метод перерисовки UI.
     /// Вызывается каждый раз, когда меняется список предметов.
     /// </summary>
-    public void RefreshUI(List<ItemData> items)
+    public void RefreshUI(List<InventoryManager.ItemStack> items)
     {
         // 1️⃣ Удаляем старые слоты
         foreach (Transform child in itemsContainer)
@@ -46,9 +46,6 @@ public class InventoryUI : MonoBehaviour
 
         // 2️⃣ Считаем сколько всего страниц
         int totalPages = Mathf.CeilToInt((float)items.Count / itemsPerPage);
-
-        // Если предметов 0 — всё равно считаем 1 страницу,
-        // чтобы не было деления на ноль
         totalPages = Mathf.Max(totalPages, 1);
 
         // 3️⃣ Защита: если текущая страница стала больше допустимой
@@ -62,12 +59,17 @@ public class InventoryUI : MonoBehaviour
         // 5️⃣ Создаём слоты только для нужных предметов
         for (int i = startIndex; i < endIndex; i++)
         {
-            ItemData item = items[i];
+            InventoryManager.ItemStack stack = items[i];
+            if (slotPrefab == null)
+            {
+                Debug.LogError("slotPrefab НЕ назначен!");
+                return;
+            }
 
             UIItemSlot slot = Instantiate(slotPrefab, itemsContainer);
-            slot.Setup(item);
+            slot.Setup(stack.itemData, stack.amount); // 👈 Передаем и данные, и количество
 
-            slots[item] = slot;
+            slots[stack.itemData] = slot;
         }
 
         // 6️⃣ Обновляем кнопки перелистывания

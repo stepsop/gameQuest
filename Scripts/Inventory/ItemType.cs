@@ -6,5 +6,6 @@ public enum ItemType
     Bucket,
     Sweets,
     Soul,
+    Coin,
     // дальше добавишь
 }
