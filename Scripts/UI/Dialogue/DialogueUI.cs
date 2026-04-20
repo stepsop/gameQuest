@@ -1,76 +1,139 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using System.Collections;
 
 public class DialogueUI : MonoBehaviour
 {
     public static DialogueUI Instance;
 
-    [Header("UI")]
-    [SerializeField] private GameObject window;
+    [Header("Главное окно")]
+    [SerializeField] private GameObject dialogueCanvas;      // DialogueCanvas
+    [SerializeField] private GameObject optionsCanvas;       // OptionsDialogueCanvas ← новое
+
+    [Header("Игрок — левая сторона")]
+    [SerializeField] private Image playerPortraitImage;
+    [SerializeField] private TMP_Text playerNameText;
+
+    [Header("НПС — правая сторона")]
+    [SerializeField] private Image npcPortraitImage;
+    [SerializeField] private TMP_Text npcNameText;
+
+    [Header("Диалог")]
     [SerializeField] private TMP_Text dialogueText;
-    [SerializeField] private Transform optionsContainer;
+    [SerializeField] private Transform optionsContainer;     // OptionsContainer внутри OptionsCanvas
     [SerializeField] private Button optionPrefab;
 
-  
+    [Header("Скорость печати")]
+    [SerializeField] private float typewriterSpeed = 0.03f;
+
+    private Coroutine typewriterCoroutine;
+    private bool isTyping = false;
+    private DialogueData currentDialogue;
+
     private void Awake()
     {
         Instance = this;
-        window.SetActive(false);
+        dialogueCanvas.SetActive(false);
+        optionsCanvas.SetActive(false); // Оба канваса скрыты по умолчанию
     }
 
-    /// <summary>
-    /// Очистка всех кнопок (чтобы не было клонов)
-    /// </summary>
-    private void ClearOptions()
+    public void OpenDialogue(DialogueData dialogue)
     {
-        foreach (Transform child in optionsContainer)
+        currentDialogue = dialogue;
+        GameState.IsDialogueOpen = true;
+
+        dialogueCanvas.SetActive(true);
+        optionsCanvas.SetActive(true); // Кнопки скрыты пока текст печатается
+
+        // Портрет и имя игрока
+        if (playerNameText != null)
+            playerNameText.text = dialogue.playerName;
+        if (playerPortraitImage != null)
         {
-            Destroy(child.gameObject);
+            playerPortraitImage.sprite = dialogue.playerPortrait;
+            playerPortraitImage.gameObject.SetActive(dialogue.playerPortrait != null);
+        }
+
+        // Портрет и имя NPC
+        if (npcNameText != null)
+            npcNameText.text = dialogue.npcName;
+        if (npcPortraitImage != null)
+        {
+            npcPortraitImage.sprite = dialogue.npcPortrait;
+            npcPortraitImage.gameObject.SetActive(dialogue.npcPortrait != null);
+        }
+
+        // Запускаем печать текста
+        ClearOptions();
+        if (typewriterCoroutine != null) StopCoroutine(typewriterCoroutine);
+        typewriterCoroutine = StartCoroutine(TypeText(dialogue));
+    }
+
+    private IEnumerator TypeText(DialogueData dialogue)
+    {
+        isTyping = true;
+        dialogueText.text = "";
+
+        foreach (char c in dialogue.text)
+        {
+            dialogueText.text += c;
+            yield return new WaitForSeconds(typewriterSpeed);
+        }
+
+        isTyping = false;
+        SpawnOptions(dialogue); // Текст допечатан — показываем кнопки
+    }
+
+    private void Update()
+    {
+        // Пропустить анимацию печати по нажатию E или Space
+        if (GameState.IsDialogueOpen && isTyping)
+        {
+            if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space))
+            {
+                StopCoroutine(typewriterCoroutine);
+                isTyping = false;
+                dialogueText.text = currentDialogue.text;
+                SpawnOptions(currentDialogue);
+            }
         }
     }
 
-    /// <summary>
-    /// Открытие диалога
-    /// </summary>
-    public void OpenDialogue(DialogueData dialogue)
+    private void SpawnOptions(DialogueData dialogue)
     {
-        GameState.IsDialogueOpen = true;
-
-        window.SetActive(true);
-
-        dialogueText.text = dialogue.text;
-
         ClearOptions();
+        optionsCanvas.SetActive(true); // Показываем канвас с кнопками
 
         foreach (var option in dialogue.options)
         {
             Button btn = Instantiate(optionPrefab, optionsContainer);
-
             btn.GetComponentInChildren<TMP_Text>().text = option.text;
 
+            var localOption = option;
             btn.onClick.AddListener(() =>
             {
-                // 👉 Переход к следующему диалогу
-                if (option.nextDialogue != null)
-                {
-                    OpenDialogue(option.nextDialogue);
-                }
+                if (localOption.nextDialogue != null)
+                    OpenDialogue(localOption.nextDialogue);
                 else
-                {
                     CloseDialogue();
-                }
             });
         }
     }
 
-    /// <summary>
-    /// Закрытие диалога
-    /// </summary>
+    private void ClearOptions()
+    {
+        foreach (Transform child in optionsContainer)
+            Destroy(child.gameObject);
+    }
+
     public void CloseDialogue()
     {
+        if (typewriterCoroutine != null) StopCoroutine(typewriterCoroutine);
+        isTyping = false;
         GameState.IsDialogueOpen = false;
         ClearOptions();
-        window.SetActive(false);
+        dialogueCanvas.SetActive(false);
+        optionsCanvas.SetActive(false); // Прячем оба канваса
     }
 }

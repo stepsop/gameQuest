@@ -6,6 +6,7 @@ public class PlayerMovement : MonoBehaviour
 
     private Rigidbody2D rb;
     private PlayerInputActions input;
+    private InteractionHint currentHint;
 
     private void Awake()
     {
@@ -17,7 +18,7 @@ public class PlayerMovement : MonoBehaviour
     private void FixedUpdate()
     {
         // 🔴 БЛОК ДВИЖЕНИЯ во время диалога
-        if (GameState.IsDialogueOpen)
+        if (GameState.IsDialogueOpen || GameState.IsTransitioning|| GameState.IsMenuOpen)//|| GameState.IsInventoryOpen)
         {
             rb.linearVelocity = Vector2.zero; // гарантированно останавливаем игрока
             return;
@@ -30,37 +31,60 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
-        // 🔴 БЛОК ВСЕГО ВВОДА во время диалога
-        if (GameState.IsDialogueOpen)
+        if (GameState.IsDialogueOpen || GameState.IsTransitioning|| GameState.IsMenuOpen)
             return;
 
-        // 🟢 Кнопка взаимодействия (E)
+        // Обновляем подсказку каждый кадр
+        UpdateHint();
+
         if (input.Player.Interact.WasPressedThisFrame())
-        {
-            Debug.Log("STEP 3: Нажата E");
             TryInteract();
+    }
+    void UpdateHint()
+    {
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, 1.2f);
+
+        InteractionHint nearestHint = null;
+
+        foreach (var hit in hits)
+        {
+            IInteractable interactable = hit.GetComponent<IInteractable>();
+            if (interactable != null && interactable.CanInteract())
+            {
+                nearestHint = hit.GetComponent<InteractionHint>();
+                break;
+            }
+        }
+
+        // Если подсказка изменилась — скрываем старую показываем новую
+        if (nearestHint != currentHint)
+        {
+            if (currentHint != null) currentHint.Hide();
+            currentHint = nearestHint;
+            if (currentHint != null) currentHint.Show();
         }
     }
 
     void TryInteract()
     {
-        // 🔍 Ищем объекты рядом с игроком
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, 1.2f);
+
+        IInteractable found = null;
+        InteractionHint foundHint = null;
 
         foreach (var hit in hits)
         {
             IInteractable interactable = hit.GetComponent<IInteractable>();
-
-            // Если нашли объект и с ним можно взаимодействовать
             if (interactable != null && interactable.CanInteract())
             {
-                Debug.Log("Player: взаимодействую с объектом");
-                interactable.Interact();
-                return;
+                found = interactable;
+                foundHint = hit.GetComponent<InteractionHint>();
+                break;
             }
         }
 
-        Debug.Log("Player: рядом нет объектов для взаимодействия");
+        if (found != null)
+            found.Interact();
     }
 
     private void OnDestroy()

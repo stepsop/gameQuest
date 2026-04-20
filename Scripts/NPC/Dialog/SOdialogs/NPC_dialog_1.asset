@@ -12,7 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97ee081b04e4979439ff49fae0e2b212, type: 3}
   m_Name: NPC_dialog_1
   m_EditorClassIdentifier: Assembly-CSharp::DialogueData
-  text: 1
+  playerName: "\u0418\u0433\u0440\u043E\u043A"
+  playerPortrait: {fileID: -7376663337886844919, guid: c43a6a379fa87d24ba1fd788947423cd, type: 3}
+  npcName: "\u041F\u0435\u0442\u0443\u0447"
+  npcPortrait: {fileID: -8274825644867700208, guid: 9dcf17a55ff1f664fa43824918001f35, type: 3}
+  text: "\u041F\u0440\u0438\u0432\u0435\u0442 \u043F\u0443\u0442\u043D\u0438\u043A\u0430
+    . \u0427\u0442\u043E \u0442\u044B \u0445\u043E\u0447\u0435\u0448\u044C \u043E\u0442
+    \u043C\u0435\u043D\u044F?"
   options:
   - text: "\u0422\u043E\u0440\u0433\u043E\u0432\u0430\u0442\u044C"
     nextDialogue: {fileID: 11400000, guid: be199b4caaad7364b972515c02812a7a, type: 2}

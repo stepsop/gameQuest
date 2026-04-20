@@ -3,60 +3,92 @@ using UnityEngine;
 
 public class InventoryUI : MonoBehaviour
 {
-    // Singleton — чтобы можно было обращаться из InventoryManager
     public static InventoryUI Instance { get; private set; }
+    private PlayerInputActions input;
 
     [Header("UI References")]
-
-    // Контейнер, в который будут создаваться слоты
+    [SerializeField] private GameObject inventoryPanel; // Перетащи сюда InventoryPanel
     [SerializeField] private Transform itemsContainer;
-
-    // Префаб одного слота (должен быть prefab из Project!)
     [SerializeField] private UIItemSlot slotPrefab;
-
-    // Сколько предметов показывать на одной странице
     [SerializeField] private int itemsPerPage = 6;
-
-    // Кнопки перелистывания
     [SerializeField] private GameObject nextButton;
     [SerializeField] private GameObject prevButton;
+    [SerializeField] private PauseMenuUI pauseMenuUI; // Назначи в редакторе
 
-    // Текущая страница (начинаем с 0)
     private int currentPage = 0;
-
-    // Словарь слотов ТЕКУЩЕЙ страницы
     private Dictionary<ItemData, UIItemSlot> slots = new();
+
+    // Открыт ли инвентарь сейчас
+    private bool isOpen = false;
 
     private void Awake()
     {
         Instance = this;
+        input = new PlayerInputActions();
+        input.Enable();
+    }
+
+    private void Start()
+    {
+        // Скрываем инвентарь при старте
+        // Так же как с диалогом — в редакторе видно, в игре скрыто
+        inventoryPanel.SetActive(false);
+    }
+
+    private void Update()
+    {
+        
+
+        if (input.Player.OpenInventory.WasPressedThisFrame())
+        {
+            Debug.Log("Кнопка I нажата!");
+            if (GameState.IsDialogueOpen) return;
+            if (GameState.IsMenuOpen) return; // Не открывать инвентарь если меню открыто
+            ToggleInventory();
+        }
     }
 
     /// <summary>
-    /// Главный метод перерисовки UI.
-    /// Вызывается каждый раз, когда меняется список предметов.
+    /// Переключает инвентарь — если открыт закрывает, если закрыт открывает
+    /// Toggle — это паттерн переключения состояния
     /// </summary>
+    public void ToggleInventory()
+    {
+        isOpen = !isOpen; // Инвертируем состояние
+        inventoryPanel.SetActive(isOpen);
+        GameState.IsInventoryOpen = isOpen;
+
+        // Управляем видимостью кнопки меню
+        if (pauseMenuUI != null)
+        {
+            pauseMenuUI.SetMenuButtonActive(isOpen);
+            
+            // Если закрыли инвентарь — закрываем pausePanel
+            if (!isOpen)
+                pauseMenuUI.CloseMenu();
+        }
+
+        // Если открыли — обновляем UI чтобы показать актуальные предметы
+        if (isOpen)
+            RefreshUI(InventoryManager.Instance.Items);
+    }
+
     public void RefreshUI(List<InventoryManager.ItemStack> items)
     {
-        // 1️⃣ Удаляем старые слоты
         foreach (Transform child in itemsContainer)
             Destroy(child.gameObject);
 
         slots.Clear();
 
-        // 2️⃣ Считаем сколько всего страниц
         int totalPages = Mathf.CeilToInt((float)items.Count / itemsPerPage);
         totalPages = Mathf.Max(totalPages, 1);
 
-        // 3️⃣ Защита: если текущая страница стала больше допустимой
         if (currentPage >= totalPages)
             currentPage = totalPages - 1;
 
-        // 4️⃣ Вычисляем диапазон предметов для текущей страницы
         int startIndex = currentPage * itemsPerPage;
         int endIndex = Mathf.Min(startIndex + itemsPerPage, items.Count);
 
-        // 5️⃣ Создаём слоты только для нужных предметов
         for (int i = startIndex; i < endIndex; i++)
         {
             InventoryManager.ItemStack stack = items[i];
@@ -67,64 +99,40 @@ public class InventoryUI : MonoBehaviour
             }
 
             UIItemSlot slot = Instantiate(slotPrefab, itemsContainer);
-            slot.Setup(stack.itemData, stack.amount); // 👈 Передаем и данные, и количество
-
+            slot.Setup(stack.itemData, stack.amount);
             slots[stack.itemData] = slot;
         }
 
-        // 6️⃣ Обновляем кнопки перелистывания
         UpdatePageButtons(totalPages);
     }
 
-    /// <summary>
-    /// Обновляет видимость кнопок Next/Prev
-    /// </summary>
     private void UpdatePageButtons(int totalPages)
     {
-        // Кнопка "вперёд" видна,
-        // если текущая страница не последняя
         nextButton.SetActive(currentPage < totalPages - 1);
-
-        // Кнопка "назад" видна,
-        // если мы не на первой странице
         prevButton.SetActive(currentPage > 0);
     }
 
-    /// <summary>
-    /// Выделение выбранного предмета
-    /// </summary>
     public void Highlight(ItemData item)
     {
-        // Сначала снимаем выделение со всех слотов текущей страницы
         foreach (var s in slots.Values)
             s.SetSelected(false);
 
-        // Если предмет есть на текущей странице — выделяем
         if (slots.ContainsKey(item))
             slots[item].SetSelected(true);
     }
 
-    /// <summary>
-    /// Снять выделение со всех слотов
-    /// </summary>
     public void ClearSelection()
     {
         foreach (var s in slots.Values)
             s.SetSelected(false);
     }
 
-    /// <summary>
-    /// Перейти на следующую страницу
-    /// </summary>
     public void NextPage()
     {
         currentPage++;
         RefreshUI(InventoryManager.Instance.Items);
     }
 
-    /// <summary>
-    /// Перейти на предыдущую страницу
-    /// </summary>
     public void PrevPage()
     {
         currentPage--;

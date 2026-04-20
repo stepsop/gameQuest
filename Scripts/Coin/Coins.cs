@@ -2,41 +2,39 @@ using UnityEngine;
 
 public class Coin : MonoBehaviour, IInteractable
 {
-    [SerializeField] private ItemData coinItemData; // 📦 Ссылка на ассет монеты
-    [SerializeField] private int coinAmount = 1;    // Количество монет в одной "кучке"
+    [SerializeField] private ItemData coinItemData;
+    [SerializeField] private int coinAmount = 1;
 
     private bool playerInside;
+    private string itemID;
 
-    public bool CanInteract()
+    private void Start()
     {
-        return playerInside; // Можно подобрать, если игрок рядом
+        itemID = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
+                 + "_" + gameObject.name;
+
+        if (PickupTracker.Instance != null && PickupTracker.Instance.IsPickedUp(itemID))
+            gameObject.SetActive(false);
     }
+
+    public bool CanInteract() => playerInside;
 
     public void Interact()
     {
         if (!CanInteract()) return;
 
-        // Добавляем монету в инвентарь (метод AddItem мы изменим ниже)
+        PickupTracker.Instance?.MarkPickedUp(itemID);
         InventoryManager.Instance.AddItem(coinItemData, coinAmount);
-        
-        // Уничтожаем объект монеты на сцене
         Destroy(gameObject);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
-        {
-            playerInside = true;
-            Debug.Log("Монета: игрок рядом, можно подобрать через E");
-        }
+        if (other.CompareTag("Player")) playerInside = true;
     }
 
     private void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
-        {
-            playerInside = false;
-        }
+        if (other.CompareTag("Player")) playerInside = false;
     }
 }

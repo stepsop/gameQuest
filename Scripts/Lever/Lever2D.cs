@@ -31,7 +31,9 @@ public class Lever2D : MonoBehaviour, IInteractable
             return;
         }
 
-        Instantiate(coinPrefab, spawnPoint.position, spawnPoint.rotation);
+        // Спавним монету и сразу переименовываем
+        GameObject coin = Instantiate(coinPrefab, spawnPoint.position, spawnPoint.rotation);
+        coin.name = "Coin";
         Debug.Log("Монета заспавнена");
 
         InventoryManager.Instance.ConsumeSelectedItem();
