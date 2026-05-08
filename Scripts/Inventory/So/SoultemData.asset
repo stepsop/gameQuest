@@ -9,9 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 190337545a07cbf44abd5c98f5274209, type: 3}
+  m_Script: {fileID: 11500000, guid: 53aad133f7c431b4e9967e765704a304, type: 3}
   m_Name: SoultemData
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemType: 5
-  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  icon: {fileID: -8274825644867700208, guid: 9dcf17a55ff1f664fa43824918001f35, type: 3}
   consumable: 1
+  inspectPhrase: 
+  inspectAudio: {fileID: 0}
+  inspectTransformTo: {fileID: 0}
+  combineWith: []

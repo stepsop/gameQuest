@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class InventoryUI : MonoBehaviour
 {
@@ -33,6 +34,45 @@ public class InventoryUI : MonoBehaviour
         // Скрываем инвентарь при старте
         // Так же как с диалогом — в редакторе видно, в игре скрыто
         inventoryPanel.SetActive(false);
+
+        // В сцене кнопки перелистывания иногда "теряют" target в OnClick (UnityEvent),
+        // и тогда нажатие визуально происходит, но метод NextPage/PrevPage не вызывается.
+        // Чтобы не чинить руками YAML каждой сцены — страхуемся кодом.
+        WirePaginationButtonsIfNeeded();
+    }
+
+    private void WirePaginationButtonsIfNeeded()
+    {
+        // Привязываем обработчики к кнопкам только если у них нет валидных persistent listeners.
+        // Это важно: если в инспекторе всё настроено корректно — мы не добавим второй обработчик
+        // и не получим двойной перелист.
+        TryWireButton(nextButton, NextPage);
+        TryWireButton(prevButton, PrevPage);
+    }
+
+    private static void TryWireButton(GameObject buttonObject, UnityEngine.Events.UnityAction action)
+    {
+        if (buttonObject == null) return;
+
+        var button = buttonObject.GetComponent<Button>();
+        if (button == null) return;
+
+        // Persistent listeners — это те, что видны в инспекторе (UnityEvent).
+        // Проблема конкретно у тебя была в том, что listener есть, но target = null,
+        // то есть Unity нечего вызывать.
+        int persistentCount = button.onClick.GetPersistentEventCount();
+        bool hasValidPersistentTarget = false;
+        for (int i = 0; i < persistentCount; i++)
+        {
+            if (button.onClick.GetPersistentTarget(i) != null)
+            {
+                hasValidPersistentTarget = true;
+                break;
+            }
+        }
+
+        if (!hasValidPersistentTarget)
+            button.onClick.AddListener(action);
     }
 
     private void Update()

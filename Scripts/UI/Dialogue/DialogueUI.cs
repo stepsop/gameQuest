@@ -30,12 +30,28 @@ public class DialogueUI : MonoBehaviour
     private Coroutine typewriterCoroutine;
     private bool isTyping = false;
     private DialogueData currentDialogue;
+    private PlayerInputActions input;
 
     private void Awake()
     {
-        Instance = this;
+        input = new PlayerInputActions();
+        Instance = this; // Это работает только если объект активен при старте
+
+        // Input System: пока asset не включён, WasPressedThisFrame() никогда не сработает.
+        // Мы включаем его здесь, чтобы диалог гарантированно реагировал на Interact,
+        // даже если другие части игры используют свои экземпляры PlayerInputActions.
+        input.Enable();
+
+        // Канвасы скрываем через SetActive — сам объект DialogueUI должен быть активен!
         dialogueCanvas.SetActive(false);
-        optionsCanvas.SetActive(false); // Оба канваса скрыты по умолчанию
+        optionsCanvas.SetActive(false);
+    }
+
+    private void OnDestroy()
+    {
+        // Корректно отключаем input, чтобы не оставлять включённые action maps после уничтожения UI.
+        // (Особенно важно, если кто-то всё-таки решит пересоздавать DialogueUI при смене сцен.)
+        input?.Disable();
     }
 
     public void OpenDialogue(DialogueData dialogue)
@@ -90,7 +106,7 @@ public class DialogueUI : MonoBehaviour
         // Пропустить анимацию печати по нажатию E или Space
         if (GameState.IsDialogueOpen && isTyping)
         {
-            if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space))
+            if (input.Player.Interact.WasPressedThisFrame())
             {
                 StopCoroutine(typewriterCoroutine);
                 isTyping = false;

@@ -17,10 +17,12 @@ public class SceneLoader : MonoBehaviour
 
     private void Awake()
     {
-        // Если SceneLoader уже существует — уничтожаем новый
-        // Это нужно потому что DontDestroyOnLoad сохраняет объект
-        // и при загрузке новой сцены может появиться второй
-        if (Instance != null)
+        // SceneLoader должен быть единственным на всю игру.
+        // Важно: MissingReferenceException появляется, когда static Instance указывает на уже уничтоженный объект.
+        // Поэтому:
+        // - уничтожаем только ДУБЛИ (Instance != this)
+        // - в OnDestroy сбрасываем Instance, если уничтожили текущий экземпляр
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
@@ -33,10 +35,32 @@ public class SceneLoader : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    private void OnDestroy()
+    {
+        // Если Unity уничтожил этот объект (например, из-за дублей или ручного удаления),
+        // нельзя оставлять Instance указывать на "destroyed" объект — это и вызывает MissingReferenceException.
+        if (Instance == this)
+            Instance = null;
+    }
+
     // Главный метод — вызывается из SceneTransition
     // sceneName — это название файла сцены без расширения
     public void LoadScene(string sceneName)
     {
+        // Защита: если объект по какой-то причине уничтожен/выключен, не пытаемся стартовать корутину.
+        // Лучше лог + безопасный выход, чем падение игры.
+        if (!this || !isActiveAndEnabled)
+        {
+            Debug.LogError($"SceneLoader.LoadScene({sceneName}) вызван, но SceneLoader не активен или уничтожен.");
+            return;
+        }
+
+        if (fadeImage == null)
+        {
+            Debug.LogError("SceneLoader: fadeImage не назначен в инспекторе. Переход невозможен без fadeImage.");
+            return;
+        }
+
         // Запускаем корутину — она делает:
         // затемнение → загрузка сцены → осветление
         StartCoroutine(LoadSceneRoutine(sceneName));
@@ -58,7 +82,10 @@ public class SceneLoader : MonoBehaviour
         yield return null;
 
         // Шаг 4 — говорим камере найти новый Floor
-        Camera.main.GetComponent<CameraFollow>().FindBounds();
+        // Camera.main может быть null (нет MainCamera) или CameraFollow может отсутствовать.
+        // Это не критично для перехода, поэтому делаем null-safe.
+        if (Camera.main != null && Camera.main.TryGetComponent(out CameraFollow follow))
+            follow.FindBounds();
 
         // Шаг 5 — плавно осветляем экран
         yield return StartCoroutine(Fade(1f, 0f));

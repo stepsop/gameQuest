@@ -5,7 +5,6 @@ public class InventoryManager : MonoBehaviour
 {
     public static InventoryManager Instance { get; private set; }
 
-    // Теперь это будет список, где мы храним не просто предметы, а предметы с количеством
     private List<ItemStack> items = new();
     public List<ItemStack> Items => items;
 
@@ -26,46 +25,53 @@ public class InventoryManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        // Единственный инвентарь на всю игру (между сценами).
+        // Если где-то в сцене случайно лежит ещё один InventoryManager —
+        // он не должен перезаписать Instance и "обнулить" список предметов.
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
+        // Иначе при переходе сцены список предметов сбрасывается.
+        DontDestroyOnLoad(gameObject);
     }
 
-    // 📦 НОВЫЙ МЕТОД: Добавление с количеством
     public void AddItem(ItemData item, int amount = 1)
     {
-        // Ищем, есть ли уже такой предмет в инвентаре
         ItemStack existingStack = items.Find(stack => stack.itemData == item);
 
         if (existingStack != null)
-        {
-            // Если нашли — увеличиваем количество
             existingStack.amount += amount;
-        }
         else
-        {
-            // Если нет — создаем новую запись
             items.Add(new ItemStack(item, amount));
-        }
 
-        // Обновляем UI (нужно будет чуть изменить InventoryUI)
         InventoryUI.Instance.RefreshUI(items);
     }
 
-    // Старый метод AddItem (для обратной совместимости, если где-то использовался)
-    public void AddItem(ItemData item)
+    public void RemoveItem(ItemData item, int amount = 1)
     {
-        AddItem(item, 1);
+        ItemStack stack = items.Find(s => s.itemData == item);
+        if (stack == null) return;
+
+        stack.amount -= amount;
+        if (stack.amount <= 0)
+            items.Remove(stack);
+
+        InventoryUI.Instance.RefreshUI(items);
     }
 
-    public bool HasItem(ItemType type)
+    public bool HasItem(ItemData item)
     {
-        return items.Exists(stack => stack.itemData.itemType == type);
+        return items.Exists(stack => stack.itemData == item);
     }
 
-    // Получить количество предметов определенного типа
-    public int GetItemCount(ItemType type)
+    public int GetItemCount(ItemData item)
     {
-        ItemStack stack = items.Find(s => s.itemData.itemType == type);
+        ItemStack stack = items.Find(s => s.itemData == item);
         return stack?.amount ?? 0;
     }
 
@@ -82,17 +88,14 @@ public class InventoryManager : MonoBehaviour
         InventoryUI.Instance.Highlight(item);
     }
 
-    // 💰 Трата монет (например, при покупке)
-    public bool SpendCoins(int amount)
+    public bool SpendCoins(ItemData coinItem, int amount)
     {
-        ItemStack coinStack = items.Find(s => s.itemData.itemType == ItemType.Coin);
-        
+        ItemStack coinStack = items.Find(s => s.itemData == coinItem);
+
         if (coinStack == null || coinStack.amount < amount)
-            return false; // Недостаточно монет
+            return false;
 
         coinStack.amount -= amount;
-        
-        // Если монет стало 0 — удаляем запись
         if (coinStack.amount <= 0)
             items.Remove(coinStack);
 
@@ -100,26 +103,14 @@ public class InventoryManager : MonoBehaviour
         return true;
     }
 
-    // Потребление выбранного предмета (теперь с учетом количества)
     public void ConsumeSelectedItem()
     {
         if (SelectedItem == null) return;
 
         if (SelectedItem.consumable)
         {
-            ItemStack stack = items.Find(s => s.itemData == SelectedItem);
-            
-            if (stack != null)
-            {
-                stack.amount--;
-                
-                if (stack.amount <= 0)
-                {
-                    items.Remove(stack);
-                    SelectedItem = null;
-                }
-            }
-
+            RemoveItem(SelectedItem);
+            SelectedItem = null;
             InventoryUI.Instance.RefreshUI(items);
         }
     }

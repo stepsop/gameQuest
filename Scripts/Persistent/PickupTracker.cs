@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class PickupTracker : MonoBehaviour
 {
     public static PickupTracker Instance { get; private set; }
@@ -11,8 +12,19 @@ public class PickupTracker : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null) { Destroy(gameObject); return; }
+        // Этот менеджер должен быть единственным на всю игру.
+        // Если сцена содержит PickupTracker, а GameRoot уже создал глобальный —
+        // то "сценовый" экземпляр уничтожится и не затрёт данные.
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
+
+        // Нужен, чтобы HashSet не сбрасывался при переходах сцен.
+        DontDestroyOnLoad(gameObject);
     }
 
     // Запомнить что предмет подобран

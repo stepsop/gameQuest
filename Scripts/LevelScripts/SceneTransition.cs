@@ -28,6 +28,14 @@ public class SceneTransition : MonoBehaviour, IInteractable
         PlayerSpawnManager.ShouldSpawn = true;
 
         // Запускаем переход
+        // SceneLoader.Instance может быть "битым" (уничтоженный объект) если в сценах были дубли
+        // или кто-то отключил/удалил объект. Делаем проверку, чтобы не ронять игру.
+        if (SceneLoader.Instance == null)
+        {
+            Debug.LogError("SceneLoader.Instance == null. Добавь SceneLoader на сцену (например, MainLogic) или поднимай его через bootstrap.");
+            return;
+        }
+
         SceneLoader.Instance.LoadScene(targetScene);
     }
 

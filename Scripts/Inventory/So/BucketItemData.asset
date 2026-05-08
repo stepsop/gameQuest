@@ -9,9 +9,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 190337545a07cbf44abd5c98f5274209, type: 3}
+  m_Script: {fileID: 11500000, guid: 53aad133f7c431b4e9967e765704a304, type: 3}
   m_Name: BucketItemData
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemType: 3
-  icon: {fileID: 10911, guid: 0000000000000000f000000000000000, type: 0}
+  icon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
   consumable: 1
+  inspectPhrase: 
+  inspectAudio: {fileID: 0}
+  inspectTransformTo: {fileID: 0}
+  combineWith:
+  - otherItem: {fileID: 11400000, guid: 20af0412420b444408a3fbf16968f37c, type: 2}
+    result: {fileID: 11400000, guid: fcf7ddfde6b2535429fa9d3620c12278, type: 2}
+    successPhrase: "\u0423 \u043D\u0430\u0441 \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u0441\u044F
+      \u043D\u043E\u0436"
+    successAudio: {fileID: 0}
